@@ -2,85 +2,67 @@ import cv2
 import easyocr
 import os
 import sys
+import time
+import numpy as np
 
-def preprocess_image(image):
-    """Apply preprocessing to improve OCR accuracy"""
-    # Convert to grayscale
+def preprocessImage(image, denoise=False, sharpen=False):
+    """Apply preprocessing with optional denoise and sharpen"""
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    
-    # Resize if too small (minimum height 300px)
     h, w = gray.shape
+    
     if h < 300:
         scale = 300 / h
-        new_w = int(w * scale)
-        gray = cv2.resize(gray, (new_w, 300), interpolation=cv2.INTER_CUBIC)
+        newW = int(w * scale)
+        gray = cv2.resize(gray, (newW, 300), interpolation=cv2.INTER_CUBIC)
     
-    # Apply adaptive thresholding (works well for varying lighting)
-    binary = cv2.adaptiveThreshold(gray, 255, 
-                                   cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                   cv2.THRESH_BINARY, 11, 2)
+    binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
     
-    # Remove small noise
-    denoised = cv2.medianBlur(binary, 3)
+    result = binary
     
-    return denoised
+    if denoise:
+        result = cv2.medianBlur(result, 3)
+    
+    if sharpen:
+        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        result = cv2.filter2D(result, -1, kernel)
+    
+    return result
 
-def extract_text_from_image(image_path):
-    """Load image, process it, and extract text"""
-    # Check if file exists
-    if not os.path.exists(image_path):
-        return f"Error: File '{image_path}' not found."
+def extractTextFromImage(imagePath, denoise=False, sharpen=False):
+    """Load image, preprocess, and extract text using EasyOCR"""
     
-    # Load image
-    img = cv2.imread(image_path)
+    img = cv2.imread(imagePath)
     if img is None:
-        return f"Error: Could not read image '{image_path}'. Make sure it's a valid image file."
+        return f"Error: Could not read image '{imagePath}'."
     
-    # Preprocess
-    processed = preprocess_image(img)
+    processed = preprocessImage(img, denoise, sharpen)
     
-    # Initialize OCR reader (only once, but we'll do it here for simplicity)
-    reader = easyocr.Reader(['en'])
+    reader = easyocr.Reader(['en'], verbose=False, gpu=False)
     
-    # Extract text
     results = reader.readtext(processed, detail=0, paragraph=False)
     
-    # Join all detected text
-    extracted_text = " ".join(results)
+    extractedText = " ".join(results)
     
-    return extracted_text if extracted_text else "No text detected in the image."
+    return extractedText if extractedText else "No text detected"
 
-def main():
-    print("=" * 50)
-    print("Text Extractor from Image")
-    print("=" * 50)
     
-    # Ask for image filename
-    image_name = input("\nEnter the image filename (e.g., photo.jpg or C:/folder/image.png): ").strip()
+imageName = input("\nImage filename: ").strip().strip('"').strip("'")
+print("\nOptional preprocessing (improves accuracy but adds time):")
+denoise = input("Apply denoising? (y/n): ").strip().lower() in ['y', 'yes']
+sharpen = input("Apply sharpening? (y/n): ").strip().lower() in ['y', 'yes']
     
-    # Remove quotes if user added them
-    image_name = image_name.strip('"').strip("'")
+if denoise or sharpen:
+    print("\n[INFO] Processing with additional filters")
     
-    print(f"\nAnalyzing '{image_name}'...\n")
+print(f"\nAnalyzing '{imageName}'...\n")
     
-    # Extract text
-    result = extract_text_from_image(image_name)
+startTime = time.time()
+result = extractTextFromImage(imageName, denoise, sharpen)
+elapsed = time.time() - startTime
     
-    # Print results
-    print("-" * 50)
-    print("EXTRACTED TEXT:")
-    print("-" * 50)
-    print(result)
-    print("-" * 50)
-
-if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        print("\n\nProgram cancelled by user.")
-        sys.exit(0)
-    except Exception as e:
-        print(f"\nUnexpected error: {e}")
-        print("\nMake sure you have installed required packages:")
-        print("pip install opencv-python easyocr torch")
-        sys.exit(1)
+print("-" * 55)
+print("EXTRACTED TEXT:")
+print("-" * 55)
+print(result)
+print("-" * 55)
+print(f"\nTime: {elapsed:.2f} seconds")
