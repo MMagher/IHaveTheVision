@@ -28,12 +28,45 @@ def preprocessImage(image, denoise=False, sharpen=False):
     
     return result
 
-def extractTextFromImage(imagePath, denoise=False, sharpen=False):
-    """Load image, preprocess, and extract text using EasyOCR"""
+def captureFromWebcam():
+    """Capture a single image from webcam"""
+    cap = cv2.VideoCapture(0)
     
-    img = cv2.imread(imagePath)
-    if img is None:
-        return f"Error: Could not read image '{imagePath}'."
+    if not cap.isOpened():
+        print("Error: Could not open webcam")
+        return None
+    
+    print("\n[INFO] Webcam opened. Press SPACE to capture, ESC to cancel.")
+    
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Could not read frame")
+            break
+        
+        cv2.imshow("Webcam - Press SPACE to capture", frame)
+        
+        key = cv2.waitKey(1)
+        if key == 32:
+            capturedImage = frame
+            break
+        elif key == 27:
+            capturedImage = None
+            break
+    
+    cap.release()
+    cv2.destroyAllWindows()
+    
+    return capturedImage
+
+def extractTextFromImage(image, denoise=False, sharpen=False):
+    """Extract text from image (can be file path or numpy array)"""
+    if isinstance(image, str):
+        img = cv2.imread(image)
+        if img is None:
+            return f"Error: Could not read image '{image}'."
+    else:
+        img = image
     
     processed = preprocessImage(img, denoise, sharpen)
     
@@ -45,19 +78,36 @@ def extractTextFromImage(imagePath, denoise=False, sharpen=False):
     
     return extractedText if extractedText else "No text detected"
 
+print("\nInput source:")
+print("  1. Image file")
+print("  2. Webcam (take a picture)")
     
-imageName = input("\nImage filename: ").strip().strip('"').strip("'")
-print("\nOptional preprocessing (improves accuracy but adds time):")
+sourceChoice = input("\nChoose (1 or 2): ").strip()
+    
+imageData = None
+    
+if sourceChoice == "2":
+    print("\n[INFO] Starting webcam...")
+    imageData = captureFromWebcam()
+    if imageData is None:
+        print("Cancelled or webcam error.")
+        sys.exit(0)
+    print("\n[INFO] Image captured from webcam")
+else:
+    imageName = input("\nImage filename: ").strip().strip('"').strip("'")
+    imageData = imageName
+    
+print("\nOptional preprocessing Choose only one, both gives quack results:")
 denoise = input("Apply denoising? (y/n): ").strip().lower() in ['y', 'yes']
 sharpen = input("Apply sharpening? (y/n): ").strip().lower() in ['y', 'yes']
     
 if denoise or sharpen:
     print("\n[INFO] Processing with additional filters")
-    
-print(f"\nAnalyzing '{imageName}'...\n")
+
+print(f"\nAnalyzing...\n")
     
 startTime = time.time()
-result = extractTextFromImage(imageName, denoise, sharpen)
+result = extractTextFromImage(imageData, denoise, sharpen)
 elapsed = time.time() - startTime
     
 print("-" * 55)
