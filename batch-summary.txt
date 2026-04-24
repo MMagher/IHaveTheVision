@@ -1,0 +1,8 @@
+Batch Run - 2026-04-24 13:24:43
+Average Accuracy: 51.21%
+Total Images: 3
+
+Individual Results:
+  easy images\test1.png: 65.0%
+  easy images\test2.png: 36.0%
+  easy images\test3.png: 52.62%
