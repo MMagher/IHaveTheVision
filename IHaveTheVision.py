@@ -1,12 +1,27 @@
-import cv2
-import easyocr
+
 import os
 import sys
 import time
-import numpy as np
 import re
 from datetime import datetime
 import glob
+try:
+    import cv2
+except ImportError:
+    print("OpenCV not installed. Run: pip install opencv-python")
+    sys.exit(1)
+
+try:
+    import easyocr
+except ImportError:
+    print("easyOCR not installed. Run: pip install easyocr")
+    sys.exit(1)
+
+try:
+    import numpy as np
+except ImportError:
+    print("numpy not installed. Run: pip install numpy")
+    sys.exit(1)
 
 # Test cases dictionary for validation
 testcase = {
