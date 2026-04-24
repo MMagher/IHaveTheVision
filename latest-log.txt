@@ -59,3 +59,10 @@ Image: webcam_capture
 Extracted: WESTWEV H1@GHuS 4Guo8TuC CE QT Tei905-686.97292.Fa30056866188' Whdccai ULTRASOUND BMD
 Time: 2.08s
 ============================================================
+
+============================================================
+Timestamp: 2026-04-24 14:16:09
+Image: easy images/test4.png
+Extracted: 78G Hamilton 8Go3C Mostly sunny
+Time: 1.59s
+============================================================

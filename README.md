@@ -17,3 +17,5 @@ simply run IHaveTheVision.py and when prompted type the full name of the image w
 
 There is a branch 
 
+to take a picture from the webcam, you must first have the window with your live webcam feed be focused(click inside the window to focus)
+

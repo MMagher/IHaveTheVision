@@ -10,9 +10,12 @@ import glob
 
 # Test cases dictionary for validation
 testcase = {
-    "e1": "Passport", 
+    "e1": "PASSPORT", 
     "e2": "git push -u origin main", 
     "e3": "All exams times are scheduled in EST (eastern Standard Time) Semester Course Title CRN Instructor Date Start Duration Room Location Surname Winter CSCI Artificail 72751 Davoudi April 22 3:30 p.m. 2 hours 15 minutes SIR2060 North 2026 4610U Intelligence",
+    "e4":"7C Hamilton 8C 3C Mostly  Sunny",
+    "e5":"SUNO",
+    "e6":"BIKE LANE"
 }
 
 def calculateAccuracy(extracted, expected):
@@ -201,14 +204,20 @@ def detectTestCase(imagePath):
     """Auto-detect which test case matches the image filename"""
     filename = os.path.basename(imagePath).lower()
     
-    # Check filename for test case identifiers
     if 'test1' in filename or 'e1' in filename:
         return 'e1', testcase['e1']
     elif 'test2' in filename or 'e2' in filename:
         return 'e2', testcase['e2']
     elif 'test3' in filename or 'e3' in filename:
         return 'e3', testcase['e3']
+    elif 'test4' in filename or 'e4' in filename:
+        return 'e4', testcase['e4']
+    elif 'test5' in filename or 'e5' in filename:
+        return 'e5', testcase['e5']
+    elif 'test6' in filename or 'e6' in filename:
+        return 'e6', testcase['e6']
     else:
+        return None, None
         return None, None
 
 def findEasyImages():
