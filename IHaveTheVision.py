@@ -1,10 +1,10 @@
-
 import os
 import sys
 import time
 import re
 from datetime import datetime
 import glob
+
 try:
     import cv2
 except ImportError:
@@ -23,7 +23,6 @@ except ImportError:
     print("numpy not installed. Run: pip install numpy")
     sys.exit(1)
 
-# Test cases dictionary for validation
 testcase = {
     "e1": "PASSPORT", 
     "e2": "git push -u origin main", 
@@ -33,15 +32,16 @@ testcase = {
     "e6":"BIKE LANE"
 }
 
+if not os.path.exists("logs"):
+    os.makedirs("logs")
+
 def calculateAccuracy(extracted, expected):
-    """Calculate accuracy percentage between extracted and expected text using character and word matching"""
     if not extracted or extracted == "No text detected":
         return 0.0
     
     extracted = str(extracted).strip()
     expected = str(expected).strip()
     
-    # Exact match returns 100%
     if extracted == expected:
         return 100.0
     
@@ -49,7 +49,6 @@ def calculateAccuracy(extracted, expected):
     if maxLen == 0:
         return 0.0
     
-    # Character-level accuracy
     matches = 0
     for i in range(min(len(extracted), len(expected))):
         if extracted[i] == expected[i]:
@@ -57,7 +56,6 @@ def calculateAccuracy(extracted, expected):
     
     charAccuracy = (matches / maxLen) * 100
     
-    # Word-level accuracy
     extractedWords = set(re.findall(r'\b\w+\b', extracted.lower()))
     expectedWords = set(re.findall(r'\b\w+\b', expected.lower()))
     
@@ -67,13 +65,15 @@ def calculateAccuracy(extracted, expected):
     else:
         wordAccuracy = 0
     
-    # Combined accuracy (40% character, 60% word)
     combinedAccuracy = (charAccuracy * 0.4) + (wordAccuracy * 0.6)
     
     return round(combinedAccuracy, 2)
 
+def logToFile(entry):
+    with open("logs/latest-log.txt", "a") as logFile:
+        logFile.write(entry)
+
 def logResult(imageName, extractedText, expectedText, accuracy, processingTime):
-    """Log single image test results to file"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     logEntry = f"""
@@ -86,74 +86,80 @@ Expected Text: {expectedText}
 Extracted Text: {extractedText}
 {'='*60}
 """
-    
-    # Append to main log
-    with open("latest-log.txt", "a") as logFile:
-        logFile.write(logEntry)
-    
-    # Overwrite summary with most recent test
-    with open("latest-log-summary.txt", "w") as summaryFile:
-        summaryFile.write(f"Most Recent Test - {timestamp}\n")
-        summaryFile.write(f"Accuracy: {accuracy}%\n")
-        summaryFile.write(f"Expected: {expectedText}\n")
-        summaryFile.write(f"Extracted: {extractedText}\n")
+    logToFile(logEntry)
 
 def logBatchResult(batchResults):
-    """Log batch processing results to file"""
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
-    # Write detailed batch log
-    with open("batch-log.txt", "a") as logFile:
-        logFile.write(f"\n{'#'*60}\n")
-        logFile.write(f"BATCH RUN - {timestamp}\n")
-        logFile.write(f"{'#'*60}\n")
-        
-        totalAccuracy = 0
-        for result in batchResults:
-            logFile.write(f"\nImage: {result['image']}\n")
-            logFile.write(f"  Expected: {result['expected']}\n")
-            logFile.write(f"  Extracted: {result['extracted']}\n")
-            logFile.write(f"  Accuracy: {result['accuracy']}%\n")
-            logFile.write(f"  Time: {result['time']:.2f}s\n")
-            totalAccuracy += result['accuracy']
-        
-        avgAccuracy = totalAccuracy / len(batchResults) if batchResults else 0
-        logFile.write(f"\n{'='*60}\n")
-        logFile.write(f"AVERAGE ACCURACY: {avgAccuracy:.2f}%\n")
-        logFile.write(f"TOTAL IMAGES: {len(batchResults)}\n")
-        logFile.write(f"{'='*60}\n")
+    logEntry = f"""
+{'#'*60}
+BATCH RUN - {timestamp}
+{'#'*60}
+"""
     
-    # Write batch summary
-    with open("batch-summary.txt", "w") as summaryFile:
-        summaryFile.write(f"Batch Run - {timestamp}\n")
-        summaryFile.write(f"Average Accuracy: {avgAccuracy:.2f}%\n")
-        summaryFile.write(f"Total Images: {len(batchResults)}\n")
-        summaryFile.write(f"\nIndividual Results:\n")
-        for result in batchResults:
-            summaryFile.write(f"  {result['image']}: {result['accuracy']}%\n")
+    totalAccuracy = 0
+    for result in batchResults:
+        logEntry += f"""
+Image: {result['image']}
+  Expected: {result['expected']}
+  Extracted: {result['extracted']}
+  Accuracy: {result['accuracy']}%
+  Time: {result['time']:.2f}s
+"""
+        totalAccuracy += result['accuracy']
+    
+    avgAccuracy = totalAccuracy / len(batchResults) if batchResults else 0
+    logEntry += f"""
+{'='*60}
+AVERAGE ACCURACY: {avgAccuracy:.2f}%
+TOTAL IMAGES: {len(batchResults)}
+{'='*60}
+"""
+    
+    logToFile(logEntry)
+
+def logWebcamResult(result, processingTime):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    logEntry = f"""
+{'='*60}
+Timestamp: {timestamp}
+Image: webcam_capture
+Processing Time: {processingTime:.2f} seconds
+Extracted Text: {result}
+{'='*60}
+"""
+    logToFile(logEntry)
+
+def logGeneral(imageName, result, processingTime):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    logEntry = f"""
+{'='*60}
+Timestamp: {timestamp}
+Image: {imageName}
+Processing Time: {processingTime:.2f} seconds
+Extracted Text: {result}
+{'='*60}
+"""
+    logToFile(logEntry)
 
 def preprocessImage(image, denoise=False, sharpen=False):
-    """Apply image preprocessing to improve OCR accuracy"""
-    # Convert to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     h, w = gray.shape
     
-    # Resize if image is too small (minimum height 300px)
     if h < 300:
         scale = 300 / h
         newW = int(w * scale)
         gray = cv2.resize(gray, (newW, 300), interpolation=cv2.INTER_CUBIC)
     
-    # Apply adaptive thresholding for better text detection
     binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
     
     result = binary
     
-    # Optional noise reduction
     if denoise:
         result = cv2.medianBlur(result, 3)
     
-    # Optional edge sharpening
     if sharpen:
         kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
         result = cv2.filter2D(result, -1, kernel)
@@ -161,7 +167,6 @@ def preprocessImage(image, denoise=False, sharpen=False):
     return result
 
 def captureFromWebcam():
-    """Capture a single image from webcam. Returns image or None if cancelled."""
     cap = cv2.VideoCapture(0)
     
     if not cap.isOpened():
@@ -179,10 +184,10 @@ def captureFromWebcam():
         cv2.imshow("Webcam - Press SPACE to capture", frame)
         
         key = cv2.waitKey(1)
-        if key == 32:  # SPACE key
+        if key == 32:
             capturedImage = frame
             break
-        elif key == 27:  # ESC key
+        elif key == 27:
             capturedImage = None
             break
     
@@ -192,8 +197,6 @@ def captureFromWebcam():
     return capturedImage
 
 def extractTextFromImage(image, denoise=False, sharpen=False):
-    """Extract text from image (can be file path string or numpy array)"""
-    # Load image if path provided, otherwise use direct image
     if isinstance(image, str):
         img = cv2.imread(image)
         if img is None:
@@ -201,22 +204,17 @@ def extractTextFromImage(image, denoise=False, sharpen=False):
     else:
         img = image
     
-    # Preprocess the image
     processed = preprocessImage(img, denoise, sharpen)
     
-    # Initialize EasyOCR reader (English only)
     reader = easyocr.Reader(['en'], verbose=False, gpu=False)
     
-    # Extract text
     results = reader.readtext(processed, detail=0, paragraph=False)
     
-    # Join all detected text
     extractedText = " ".join(results)
     
     return extractedText if extractedText else "No text detected"
 
 def detectTestCase(imagePath):
-    """Auto-detect which test case matches the image filename"""
     filename = os.path.basename(imagePath).lower()
     
     if 'test1' in filename or 'e1' in filename:
@@ -233,30 +231,22 @@ def detectTestCase(imagePath):
         return 'e6', testcase['e6']
     else:
         return None, None
-        return None, None
 
 def findEasyImages():
-    """Find all images in the 'easy images' folder"""
     images = []
     
-    # Check if folder exists
     if os.path.exists("easy images"):
-        # Loop through all files in folder
         for file in os.listdir("easy images"):
-            # Filter for image file extensions
             if file.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
                 images.append(os.path.join("easy images", file))
     
     images.sort()
     return images
 
-# ==================== MAIN PROGRAM START ====================
-
 print("=" * 55)
 print("IhaveTheVision")
 print("=" * 55)
 
-# Mode selection menu
 print("\nSelect mode:")
 print("  1. Single image")
 print("  2. Batch process easy images (test1, test2, test3)")
@@ -264,16 +254,13 @@ print("  3. Webcam (take a picture)")
 
 modeChoice = input("\nChoose (1, 2, or 3): ").strip()
 
-# BATCH MODE - Process all images in 'easy images' folder
 if modeChoice == "2":
-    # Find all images in easy images folder
     easyImages = findEasyImages()
     
     print(f"[INFO] Found {len(easyImages)} images:")
     for img in easyImages:
         print(f"  - {img}")
     
-    # Get preprocessing preferences
     print("\nOptional preprocessing? (Choose only one, both gives quack results):")
     denoise = input("Apply denoising? (y/n): ").strip().lower() in ['y', 'yes']
     sharpen = input("Apply sharpening? (y/n): ").strip().lower() in ['y', 'yes']
@@ -281,22 +268,21 @@ if modeChoice == "2":
     batchResults = []
     totalStart = time.time()
     
-    # Process each image
     for i, imagePath in enumerate(easyImages, 1):
-        print("processing: {imagePath}")
+        print(f"processing: {imagePath}")
         
-        # Detect which test case this image belongs to
         testKey, expectedText = detectTestCase(imagePath)
         
-        # Extract text
+        if testKey is None or expectedText is None:
+            print(f"  [SKIP] No test case mapping for {imagePath}")
+            continue
+        
         startTime = time.time()
         result = extractTextFromImage(imagePath, denoise, sharpen)
         elapsed = time.time() - startTime
         
-        # Calculate accuracy
         accuracy = calculateAccuracy(result, expectedText)
         
-        # Store results
         batchResults.append({
             'image': imagePath,
             'expected': expectedText,
@@ -305,30 +291,28 @@ if modeChoice == "2":
             'time': elapsed
         })
         
-        # Print progress
         print(f"  Expected: {expectedText[:50]}...")
         print(f"  Extracted: {result[:50]}...")
         print(f"  Accuracy: {accuracy}%")
         print(f"  Time: {elapsed:.2f}s")
     
-    # Calculate batch statistics
-    totalElapsed = time.time() - totalStart
-    avgAccuracy = sum(r['accuracy'] for r in batchResults) / len(batchResults) if batchResults else 0
-    
-    # Print batch summary
-    print("\n" + "=" * 55)
-    print("BATCH COMPLETE")
-    print("=" * 55)
-    print(f"Total Images: {len(batchResults)}")
-    print(f"Average Accuracy: {avgAccuracy:.2f}%")
-    print(f"Total Time: {totalElapsed:.2f} seconds")
-    print("=" * 55)
-    
-    # Log results
-    logBatchResult(batchResults)
-    print("\n[INFO] Batch results logged to 'batch-log.txt'")
+    if batchResults:
+        totalElapsed = time.time() - totalStart
+        avgAccuracy = sum(r['accuracy'] for r in batchResults) / len(batchResults)
+        
+        print("\n" + "=" * 55)
+        print("BATCH COMPLETE")
+        print("=" * 55)
+        print(f"Total Images: {len(batchResults)}")
+        print(f"Average Accuracy: {avgAccuracy:.2f}%")
+        print(f"Total Time: {totalElapsed:.2f} seconds")
+        print("=" * 55)
+        
+        logBatchResult(batchResults)
+        print("\n[INFO] Results logged to 'logs/latest-log.txt'")
+    else:
+        print("\n[ERROR] No valid test images found")
 
-# WEBCAM MODE - Capture and process single image from webcam
 elif modeChoice == "3":
     print("\n[INFO] Starting webcam...")
     imageData = captureFromWebcam()
@@ -338,19 +322,16 @@ elif modeChoice == "3":
     imageIdentifier = "webcam_capture"
     print("\n[INFO] Image captured from webcam")
     
-    # Get preprocessing preferences
     print("\nOptional preprocessing (Choose only one, both gives quack results):")
     denoise = input("Apply denoising? (y/n): ").strip().lower() in ['y', 'yes']
     sharpen = input("Apply sharpening? (y/n): ").strip().lower() in ['y', 'yes']
     
     print(f"\nAnalyzing...\n")
     
-    # Extract text
     startTime = time.time()
     result = extractTextFromImage(imageData, denoise, sharpen)
     elapsed = time.time() - startTime
     
-    # Print results
     print("-" * 55)
     print("EXTRACTED TEXT:")
     print("-" * 55)
@@ -358,37 +339,29 @@ elif modeChoice == "3":
     print("-" * 55)
     print(f"\nTime: {elapsed:.2f} seconds")
     
-    # Log webcam capture
-    with open("latest-log.txt", "a") as logFile:
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        logFile.write(f"\n{'='*60}\nTimestamp: {timestamp}\nImage: webcam_capture\nExtracted: {result}\nTime: {elapsed:.2f}s\n{'='*60}\n")
+    logWebcamResult(result, elapsed)
+    print("\n[INFO] Results logged to 'logs/latest-log.txt'")
 
-# SINGLE IMAGE MODE - Process one specific image
 else:
-    # Get image filename from user
     imageName = input("\nImage filename: ").strip().strip('"').strip("'")
     imageData = imageName
     imageIdentifier = imageName
     
-    # Auto-detect test case from filename
     testKey, expectedText = detectTestCase(imageName)
     if testKey:
         print(f"\n[INFO] Auto-detected test case: {testKey}")
         print(f"[INFO] Expected: {expectedText[:100]}...")
     
-    # Get preprocessing preferences
     print("\nOptional preprocessing? (Choose only one, both gives quack results):")
     denoise = input("Apply denoising? (y/n): ").strip().lower() in ['y', 'yes']
     sharpen = input("Apply sharpening? (y/n): ").strip().lower() in ['y', 'yes']
     
     print(f"\nAnalyzing...\n")
     
-    # Extract text
     startTime = time.time()
     result = extractTextFromImage(imageData, denoise, sharpen)
     elapsed = time.time() - startTime
     
-    # Print results
     print("-" * 55)
     print("EXTRACTED TEXT:")
     print("-" * 55)
@@ -396,7 +369,6 @@ else:
     print("-" * 55)
     print(f"\nTime: {elapsed:.2f} seconds")
     
-    # If test case detected, calculate and log accuracy
     if testKey and expectedText:
         accuracy = calculateAccuracy(result, expectedText)
         print(f"\n{'='*55}")
@@ -407,10 +379,7 @@ else:
         print(f"{'='*55}")
         
         logResult(imageIdentifier, result, expectedText, accuracy, elapsed)
-        print(f"\n[INFO] Results logged to 'latest-log.txt'")
+        print(f"\n[INFO] Results logged to 'logs/latest-log.txt'")
     else:
-        # Log without accuracy calculation
-        with open("latest-log.txt", "a") as logFile:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            logFile.write(f"\n{'='*60}\nTimestamp: {timestamp}\nImage: {imageIdentifier}\nExtracted: {result}\nTime: {elapsed:.2f}s\n{'='*60}\n")
-        print("\n[INFO] No test case detected for this filename (looking for 'test1', 'test2', or 'test3')")
+        logGeneral(imageIdentifier, result, elapsed)
+        print("\n[INFO] Results logged to 'logs/latest-log.txt'")

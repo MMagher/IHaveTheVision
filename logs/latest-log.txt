@@ -1,52 +1,25 @@
 
 ############################################################
-BATCH RUN - 2026-04-24 13:24:43
+BATCH RUN - 2026-04-24 15:02:33
 ############################################################
 
 Image: easy images\test1.png
-  Expected: Passport
+  Expected: PASSPORT
   Extracted: PASSPORT
-  Accuracy: 65.0%
-  Time: 1.51s
+  Accuracy: 100.0%
+  Time: 1.52s
 
 Image: easy images\test2.png
   Expected: git push -u origin main
   Extracted: push PQ @rigin main ocforce git
   Accuracy: 36.0%
-  Time: 2.04s
+  Time: 2.01s
 
 Image: easy images\test3.png
   Expected: All exams times are scheduled in EST (eastern Standard Time) Semester Course Title CRN Instructor Date Start Duration Room Location Surname Winter CSCI Artificail 72751 Davoudi April 22 3:30 p.m. 2 hours 15 minutes SIR2060 North 2026 4610U Intelligence
   Extracted: Flease Telel I0 CANVVAS I0r auuilional mmoMalion Il youi couise uues IOL appear M e Mal examinalion scneuule IISt AIl exam times are scheduled in EST Eastern Standard time): Semester Course Title CRN (nstructor Date Start} Duration Room Location Surname Seac Winter CSC] Artificial 72751 Davoudi April 22 3.30 p.m_ 2 hours 15 minutes SIR2O6O North 2026 4610U Intelligence
   Accuracy: 52.62%
-  Time: 3.44s
-
-============================================================
-AVERAGE ACCURACY: 51.21%
-TOTAL IMAGES: 3
-============================================================
-
-############################################################
-BATCH RUN - 2026-04-24 14:21:32
-############################################################
-
-Image: easy images\test1.png
-  Expected: Passport
-  Extracted: PASSPORT
-  Accuracy: 65.0%
-  Time: 1.47s
-
-Image: easy images\test2.png
-  Expected: git push -u origin main
-  Extracted: push PQ @rigin main ocforce git
-  Accuracy: 36.0%
-  Time: 1.99s
-
-Image: easy images\test3.png
-  Expected: All exams times are scheduled in EST (eastern Standard Time) Semester Course Title CRN Instructor Date Start Duration Room Location Surname Winter CSCI Artificail 72751 Davoudi April 22 3:30 p.m. 2 hours 15 minutes SIR2060 North 2026 4610U Intelligence
-  Extracted: Flease Telel I0 CANVVAS I0r auuilional mmoMalion Il youi couise uues IOL appear M e Mal examinalion scneuule IISt AIl exam times are scheduled in EST Eastern Standard time): Semester Course Title CRN (nstructor Date Start} Duration Room Location Surname Seac Winter CSC] Artificial 72751 Davoudi April 22 3.30 p.m_ 2 hours 15 minutes SIR2O6O North 2026 4610U Intelligence
-  Accuracy: 52.62%
-  Time: 3.43s
+  Time: 3.32s
 
 Image: easy images\test4.png
   Expected: 7C Hamilton 8C 3C Mostly  Sunny
@@ -58,9 +31,54 @@ Image: easy images\test5.png
   Expected: SUNO
   Extracted: sunO
   Accuracy: 70.0%
-  Time: 1.77s
+  Time: 1.61s
 
 ============================================================
-AVERAGE ACCURACY: 52.27%
+AVERAGE ACCURACY: 59.27%
 TOTAL IMAGES: 5
+============================================================
+
+############################################################
+BATCH RUN - 2026-04-24 15:04:18
+############################################################
+
+Image: easy images\test1.png
+  Expected: PASSPORT
+  Extracted: PASSPORT
+  Accuracy: 100.0%
+  Time: 1.48s
+
+Image: easy images\test2.png
+  Expected: git push -u origin main
+  Extracted: push PQ @rigin main ocforce git
+  Accuracy: 36.0%
+  Time: 2.01s
+
+Image: easy images\test3.png
+  Expected: All exams times are scheduled in EST (eastern Standard Time) Semester Course Title CRN Instructor Date Start Duration Room Location Surname Winter CSCI Artificail 72751 Davoudi April 22 3:30 p.m. 2 hours 15 minutes SIR2060 North 2026 4610U Intelligence
+  Extracted: Flease Telel I0 CANVVAS I0r auuilional mmoMalion Il youi couise uues IOL appear M e Mal examinalion scneuule IISt AIl exam times are scheduled in EST Eastern Standard time): Semester Course Title CRN (nstructor Date Start} Duration Room Location Surname Seac Winter CSC] Artificial 72751 Davoudi April 22 3.30 p.m_ 2 hours 15 minutes SIR2O6O North 2026 4610U Intelligence
+  Accuracy: 52.62%
+  Time: 3.45s
+
+Image: easy images\test4.png
+  Expected: 7C Hamilton 8C 3C Mostly  Sunny
+  Extracted: 78G Hamilton 8Go3C Mostly sunny
+  Accuracy: 37.74%
+  Time: 1.71s
+
+Image: easy images\test5.png
+  Expected: SUNO
+  Extracted: sunO
+  Accuracy: 70.0%
+  Time: 1.50s
+
+Image: easy images\test6.png
+  Expected: BIKE LANE
+  Extracted: Error: Could not read image 'easy images\test6.png'.
+  Accuracy: 0.0%
+  Time: 0.00s
+
+============================================================
+AVERAGE ACCURACY: 49.39%
+TOTAL IMAGES: 6
 ============================================================
