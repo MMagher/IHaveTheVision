@@ -17,5 +17,3 @@ simply run IHaveTheVision.py and when prompted type the full name of the image w
 
 There is a branch 
 
-
-I will work more on the project in a few hours, I need to sleep.
