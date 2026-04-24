@@ -2,85 +2,112 @@ import cv2
 import easyocr
 import os
 import sys
+import time
+import numpy as np
+from paddleocr import PaddleOCR
 
-def preprocess_image(image):
-    """Apply preprocessing to improve OCR accuracy"""
-    # Convert to grayscale
+def preprocessImage(image, denoise=False, sharpen=False):
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    
-    # Resize if too small (minimum height 300px)
     h, w = gray.shape
     if h < 300:
         scale = 300 / h
-        new_w = int(w * scale)
-        gray = cv2.resize(gray, (new_w, 300), interpolation=cv2.INTER_CUBIC)
+        newW = int(w * scale)
+        gray = cv2.resize(gray, (newW, 300), interpolation=cv2.INTER_CUBIC)
     
-    # Apply adaptive thresholding (works well for varying lighting)
-    binary = cv2.adaptiveThreshold(gray, 255, 
-                                   cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                   cv2.THRESH_BINARY, 11, 2)
+    binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+    result = binary
     
-    # Remove small noise
-    denoised = cv2.medianBlur(binary, 3)
+    if denoise:
+        result = cv2.medianBlur(result, 3)
     
-    return denoised
+    if sharpen:
+        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        result = cv2.filter2D(result, -1, kernel)
+    
+    return result
 
-def extract_text_from_image(image_path):
-    """Load image, process it, and extract text"""
-    # Check if file exists
-    if not os.path.exists(image_path):
-        return f"Error: File '{image_path}' not found."
-    
-    # Load image
-    img = cv2.imread(image_path)
-    if img is None:
-        return f"Error: Could not read image '{image_path}'. Make sure it's a valid image file."
-    
-    # Preprocess
-    processed = preprocess_image(img)
-    
-    # Initialize OCR reader (only once, but we'll do it here for simplicity)
-    reader = easyocr.Reader(['en'])
-    
-    # Extract text
+def extractTextEasyOcr(imagePath, denoise=False, sharpen=False):
+    img = cv2.imread(imagePath)
+    processed = preprocessImage(img, denoise, sharpen)
+    reader = easyocr.Reader(['en'], verbose=False, gpu=False)
     results = reader.readtext(processed, detail=0, paragraph=False)
+    return " ".join(results) if results else "No text detected"
+
+def extractTextPaddleOcr(imagePath, denoise=False, sharpen=False):
+    img = cv2.imread(imagePath)
+    processed = preprocessImage(img, denoise, sharpen)
     
-    # Join all detected text
-    extracted_text = " ".join(results)
+    tempPath = "temp_processed.png"
+    cv2.imwrite(tempPath, processed)
     
-    return extracted_text if extracted_text else "No text detected in the image."
+    ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
+    result = ocr.ocr(tempPath, cls=True)
+    
+    os.remove(tempPath)
+    
+    if not result or not result[0]:
+        return "No text detected"
+    
+    texts = [line[1][0] for line in result[0]]
+    return " ".join(texts)
+
+def extractTextFromImage(imagePath, engine="easyocr", denoise=False, sharpen=False):
+    if not os.path.exists(imagePath):
+        return f"Error: File '{imagePath}' not found."
+    
+    if engine == "easyocr":
+        return extractTextEasyOcr(imagePath, denoise, sharpen)
+    elif engine == "paddleocr":
+        return extractTextPaddleOcr(imagePath, denoise, sharpen)
+    else:
+        return f"Error: Unknown engine '{engine}'"
 
 def main():
-    print("=" * 50)
-    print("Text Extractor from Image")
-    print("=" * 50)
+    print("=" * 55)
+    print("IhaveTheVision")
+    print("=" * 55)
     
-    # Ask for image filename
-    image_name = input("\nEnter the image filename (e.g., photo.jpg or C:/folder/image.png): ").strip()
+    imageName = input("\nImage filename: ").strip().strip('"').strip("'")
     
-    # Remove quotes if user added them
-    image_name = image_name.strip('"').strip("'")
+    print("\nOCR Engine:")
+    print("  1. EasyOCR (faster)")
+    print("  2. PaddleOCR (slower but more accurate)")
     
-    print(f"\nAnalyzing '{image_name}'...\n")
+    engineChoice = input("\nUse PaddleOCR? (y/n): ").strip().lower()
     
-    # Extract text
-    result = extract_text_from_image(image_name)
+    if engineChoice in ['y', 'yes']:
+        engine = "paddleocr"
+        print("\n[INFO] Using PaddleOCR")
+    else:
+        engine = "easyocr"
+        print("\n[INFO] Using EasyOCR")
     
-    # Print results
-    print("-" * 50)
+    print("\nOptional preprocessing (can improve quality but adds time):")
+    denoise = input("Apply denoising? (y/n): ").strip().lower() in ['y', 'yes']
+    sharpen = input("Apply sharpening? (y/n): ").strip().lower() in ['y', 'yes']
+    
+    if denoise or sharpen:
+        print("\n[INFO] Processing with additional filters...")
+    
+    print(f"\nAnalyzing '{imageName}'...\n")
+    
+    startTime = time.time()
+    result = extractTextFromImage(imageName, engine, denoise, sharpen)
+    elapsed = time.time() - startTime
+    
+    print("-" * 55)
     print("EXTRACTED TEXT:")
-    print("-" * 50)
+    print("-" * 55)
     print(result)
-    print("-" * 50)
+    print("-" * 55)
+    print(f"\nTime: {elapsed:.2f} seconds")
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\nProgram cancelled by user.")
+        print("\n\nCancelled.")
         sys.exit(0)
     except Exception as e:
-        print(f"\nUnexpected error: {e}")
-        print("\nMake sure you have installed required packages:")
-        print("pip install opencv-python easyocr torch")
+        print(f"\nError: {e}")
         sys.exit(1)
